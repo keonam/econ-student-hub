@@ -220,7 +220,8 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sfn /etc/nginx/sites-available/econ-student-hub /etc/nginx/sites-enabled/econ-student-hub
 sudo nginx -t
 sudo systemctl enable nginx
-sudo systemctl reload nginx
+sudo ufw allow 80/tcp || true
+sudo systemctl restart nginx
 ```
 
 EC2 보안 그룹에서는 80번 포트를 열고, 22번 SSH 포트는 가능한 본인 IP로 제한하세요.
@@ -256,6 +257,7 @@ curl -I http://localhost
 - `git pull --ff-only` 실패: EC2 서버의 작업트리에 수동 변경사항이 있거나 브랜치가 갈라진 상태입니다. 필요한 변경을 백업한 뒤 서버 작업트리를 정리합니다.
 - `EADDRINUSE: port 3000`: 다른 프로세스가 3000번 포트를 사용 중입니다. `sudo lsof -i :3000` 또는 `pm2 status`로 확인합니다.
 - `502 Bad Gateway`: PM2 앱이 죽었거나 Nginx가 잘못된 포트로 프록시 중입니다. `pm2 logs econ-student-hub`와 `sudo nginx -t`를 확인합니다.
+- 외부에서 80번 포트 timeout: EC2 보안 그룹 inbound rule에 `HTTP 80`이 열려 있는지, 인스턴스에 연결된 보안 그룹이 맞는지, `sudo ufw status`에서 80/tcp가 허용되어 있는지 확인합니다.
 - AI 기능에서 API key 오류: EC2의 프로젝트 폴더에 `.env.local`이 있는지, PM2 restart 시 `--update-env`가 적용됐는지 확인합니다.
 
 ## 테스트
