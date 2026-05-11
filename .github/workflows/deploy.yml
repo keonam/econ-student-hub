@@ -1,0 +1,140 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: econ-student-hub-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy production app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Deploy on EC2 over SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          REPO_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          set -euo pipefail
+
+          if [ -z "${EC2_HOST}" ] || [ -z "${EC2_USER}" ] || [ -z "${EC2_SSH_KEY}" ]; then
+            echo "Missing one or more required secrets: EC2_HOST, EC2_USER, EC2_SSH_KEY"
+            exit 1
+          fi
+
+          APP_DIR="${EC2_APP_DIR:-/home/${EC2_USER}/econ-student-hub}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${EC2_SSH_KEY}" > ~/.ssh/econ-student-hub-key
+          chmod 600 ~/.ssh/econ-student-hub-key
+          ssh-keyscan -H "${EC2_HOST}" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/econ-student-hub-key "${EC2_USER}@${EC2_HOST}" "bash -s" -- "$APP_DIR" "$REPO_URL" "econ-student-hub" "3000" <<'REMOTE'
+            set -euo pipefail
+
+            EC2_APP_DIR="$1"
+            REPO_URL="$2"
+            APP_NAME="$3"
+            APP_PORT="$4"
+
+            export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+
+            if [ -s "$HOME/.nvm/nvm.sh" ]; then
+              . "$HOME/.nvm/nvm.sh"
+            fi
+
+            sudo apt-get update -y
+            sudo apt-get install -y ca-certificates curl git nginx
+
+            if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'Number(process.versions.node.split(".")[0])')" -lt 20 ]; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+
+            if ! command -v pm2 >/dev/null 2>&1; then
+              sudo npm install -g pm2
+            fi
+
+            if [ -d "$EC2_APP_DIR/.git" ]; then
+              cd "$EC2_APP_DIR"
+              git checkout main
+              git pull --ff-only origin main
+            else
+              mkdir -p "$(dirname "$EC2_APP_DIR")"
+              git clone --branch main "$REPO_URL" "$EC2_APP_DIR"
+              cd "$EC2_APP_DIR"
+            fi
+
+            if [ -f pnpm-lock.yaml ]; then
+              corepack enable
+              pnpm install --frozen-lockfile
+              pnpm run build
+              PM2_BIN="pnpm"
+              PM2_ARGS=(start -- -p "$APP_PORT")
+            elif [ -f yarn.lock ]; then
+              corepack enable
+              yarn install --frozen-lockfile
+              yarn build
+              PM2_BIN="yarn"
+              PM2_ARGS=(start -p "$APP_PORT")
+            else
+              if [ -f package-lock.json ]; then
+                npm ci
+              else
+                npm install
+              fi
+              npm run build
+              PM2_BIN="npm"
+              PM2_ARGS=(start -- -p "$APP_PORT")
+            fi
+
+            sudo tee /etc/nginx/sites-available/econ-student-hub >/dev/null <<NGINX
+            server {
+                listen 80;
+                server_name _;
+
+                location / {
+                    proxy_pass http://127.0.0.1:${APP_PORT};
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection "upgrade";
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+            }
+          NGINX
+
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo ln -sfn /etc/nginx/sites-available/econ-student-hub /etc/nginx/sites-enabled/econ-student-hub
+            sudo nginx -t
+            sudo systemctl enable nginx
+            sudo systemctl reload nginx
+
+            if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+              pm2 restart "$APP_NAME" --update-env
+            else
+              pm2 start "$PM2_BIN" --name "$APP_NAME" -- "${PM2_ARGS[@]}"
+            fi
+
+            sudo env PATH="$PATH" pm2 startup systemd -u "$USER" --hp "$HOME"
+            pm2 save
+
+            curl -fsS "http://127.0.0.1:${APP_PORT}" >/dev/null
+            curl -fsS "http://127.0.0.1" >/dev/null
+            pm2 status "$APP_NAME"
+            systemctl is-active nginx
+          REMOTE

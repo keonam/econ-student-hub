@@ -1,0 +1,9 @@
+.next/
+node_modules/
+*.log
+.env*
+!.env.example
+*.pem
+*.key
+*.ppk
+*.tsbuildinfo
