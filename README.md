@@ -117,7 +117,7 @@ Repository Settings → Secrets and variables → Actions에 아래 값을 등�
 
 | Secret | 필수 | 예시 | 설명 |
 | --- | --- | --- | --- |
-| `EC2_HOST` | 예 | `3.34.185.49` 또는 `ec2-3-34-185-49.ap-northeast-2.compute.amazonaws.com` | EC2 퍼블릭 IPv4 또는 퍼블릭 DNS |
+| `EC2_HOST` | 예 | `3.34.XXX.XXX` | EC2 퍼블릭 IPv4 또는 퍼블릭 DNS |
 | `EC2_USER` | 예 | `ubuntu` | Ubuntu AMI 기본 사용자 |
 | `EC2_SSH_KEY` | 예 | `-----BEGIN ...` 전체 내용 | EC2 접속용 private key 파일 내용 전체 |
 | `EC2_APP_DIR` | 아니오 | `/home/ubuntu/econ-student-hub` | EC2 안의 프로젝트 폴더 경로. 없으면 `/home/<EC2_USER>/econ-student-hub` 사용 |
