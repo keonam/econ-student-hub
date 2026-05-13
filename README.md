@@ -17,12 +17,14 @@ AI 기능은 OpenAI Responses API를 서버 route에서 호출합니다. 프로�
 
 ```bash
 OPENAI_API_KEY=
+OPENAI_ECON_TUTOR_PROMPT_ID=
 OPENAI_MODEL=gpt-5
 ```
 
 실제 API Key 값은 README, 소스 코드, GitHub Actions workflow, 클라이언트용 `NEXT_PUBLIC_*` 변수에 적지 않습니다. 로컬 또는 EC2 서버의 `.env.local`에만 저장하세요.
 
 `OPENAI_API_KEY`는 브라우저로 전달되지 않고 `src/app/api/ai/route.ts`에서만 사용됩니다. 모델을 바꾸고 싶으면 `OPENAI_MODEL` 값을 변경하면 됩니다.
+AI Econ Tutor는 Prompt Builder의 Prompt ID를 `OPENAI_ECON_TUTOR_PROMPT_ID`로 읽고, Prompt variables는 `question`, `level`, `mode`, `category` 이름으로 전달합니다.
 
 ## 현재 폴더 구조
 
@@ -141,6 +143,7 @@ AI 기능을 사용하려면 EC2 프로젝트 폴더에 `.env.local`을 만들�
 
 ```bash
 OPENAI_API_KEY=
+OPENAI_ECON_TUTOR_PROMPT_ID=
 OPENAI_MODEL=gpt-5
 ```
 
@@ -295,6 +298,7 @@ curl -X POST http://localhost:3000/api/ai \
 - 클라이언트 컴포넌트에서는 OpenAI API를 직접 호출하지 않습니다.
 - OpenAI 요청은 Next.js server route인 `src/app/api/ai/route.ts`를 통해서만 처리합니다.
 - 서버 route는 `process.env.OPENAI_API_KEY`만 읽습니다.
+- AI Econ Tutor의 Prompt Builder ID는 `process.env.OPENAI_ECON_TUTOR_PROMPT_ID`로만 읽습니다.
 - `NEXT_PUBLIC_OPENAI_API_KEY` 같은 공개 환경변수는 사용하지 않습니다.
 - 실제 API Key 값은 로컬 또는 EC2 `.env.local`에만 저장하고, `.env`, `.env.local`, `.env.production`은 커밋하지 않습니다.
-- EC2 배포 환경에서는 AI 기능을 사용하기 전에 `/home/ubuntu/econ-student-hub/.env.local`에 `OPENAI_API_KEY`가 있어야 합니다.
+- EC2 배포 환경에서는 AI 기능을 사용하기 전에 `/home/ubuntu/econ-student-hub/.env.local`에 `OPENAI_API_KEY`가 있어야 하고, AI Econ Tutor에는 `OPENAI_ECON_TUTOR_PROMPT_ID`도 필요합니다.

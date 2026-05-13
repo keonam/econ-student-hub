@@ -18,7 +18,16 @@ export async function requestAiResponse(
   const result = await readAiJson(response);
 
   if (!response.ok || "error" in result) {
-    throw new Error("error" in result ? result.error : fallbackMessage);
+    if ("error" in result) {
+      const message =
+        process.env.NODE_ENV === "development" && result.details
+          ? `${result.error}\n\n${result.details}`
+          : result.error;
+
+      throw new Error(message);
+    }
+
+    throw new Error(fallbackMessage);
   }
 
   return result;

@@ -71,6 +71,7 @@ export type AiResponsePayload = {
 
 export type AiErrorPayload = {
   error: string;
+  details?: string;
 };
 
 export type AiFeatureDefinition = {
