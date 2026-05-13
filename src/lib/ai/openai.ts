@@ -92,7 +92,7 @@ function buildResponsesRequestBody({
 }: Omit<CreateAiCompletionInput, "apiKey">) {
   const body: Record<string, unknown> = {
     model,
-    max_output_tokens: 1200,
+    max_output_tokens: 4000,
     text: {
       format: {
         type: "text"
@@ -119,6 +119,20 @@ function assertCompletedResponse(body: OpenAiResponse) {
     return;
   }
 
+  if (body.status === "incomplete") {
+    const reason = body.incomplete_details?.reason ?? "unknown";
+    const partialOutput = extractOpenAiText(body, { allowEmpty: true });
+
+    console.warn("OpenAI response incomplete", {
+      responseId: body.id,
+      reason
+    });
+
+    if (partialOutput) {
+      return;
+    }
+  }
+
   const reason =
     body.error?.message ??
     body.incomplete_details?.reason ??
@@ -127,9 +141,12 @@ function assertCompletedResponse(body: OpenAiResponse) {
   throw new Error(`OpenAI response ${body.status}: ${reason}`);
 }
 
-function extractOpenAiText(body: OpenAiResponse) {
+function extractOpenAiText(
+  body: OpenAiResponse,
+  options: { allowEmpty?: boolean } = {}
+) {
   if (body.output_text) {
-    return body.output_text;
+    return withIncompleteNotice(body, body.output_text);
   }
 
   const output = body.output
@@ -139,11 +156,23 @@ function extractOpenAiText(body: OpenAiResponse) {
     .join("\n")
     .trim();
 
+  if (!output && options.allowEmpty) {
+    return "";
+  }
+
   if (!output) {
     throw new Error("AI 응답 텍스트를 찾을 수 없습니다.");
   }
 
-  return output;
+  return withIncompleteNotice(body, output);
+}
+
+function withIncompleteNotice(body: OpenAiResponse, output: string) {
+  if (body.status !== "incomplete") {
+    return output;
+  }
+
+  return `${output}\n\n---\n응답이 길어 일부만 표시되었을 수 있습니다. 질문 범위를 좁히거나 다시 시도해주세요.`;
 }
 
 function windowlessSetTimeout(handler: () => void, timeout: number) {
