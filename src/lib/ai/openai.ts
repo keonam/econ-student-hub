@@ -1,3 +1,5 @@
+import "server-only";
+
 type OpenAiResponse = {
   output_text?: string;
   output?: Array<{

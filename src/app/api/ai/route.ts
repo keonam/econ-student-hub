@@ -31,12 +31,15 @@ export async function POST(request: Request) {
     return NextResponse.json<AiErrorPayload>({ error: message }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL ?? "gpt-5";
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const model = process.env.OPENAI_MODEL?.trim() || "gpt-5";
 
   if (!apiKey) {
     return NextResponse.json<AiErrorPayload>(
-      { error: "OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다." },
+      {
+        error:
+          "AI 기능을 사용하려면 서버 환경변수 OPENAI_API_KEY가 필요합니다. EC2 서버의 .env.local에 설정한 뒤 앱을 재시작해주세요."
+      },
       { status: 503 }
     );
   }
