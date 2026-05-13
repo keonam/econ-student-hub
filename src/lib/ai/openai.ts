@@ -40,7 +40,7 @@ export async function createAiCompletion({
   prompt
 }: CreateAiCompletionInput) {
   const controller = new AbortController();
-  const timeoutId = windowlessSetTimeout(() => controller.abort(), 45000);
+  const timeoutId = windowlessSetTimeout(() => controller.abort(), 120000);
 
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
