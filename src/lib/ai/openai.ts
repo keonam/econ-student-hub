@@ -41,6 +41,53 @@ export async function createAiCompletion({
   maxOutputTokens = 4000,
   prompt
 }: CreateAiCompletionInput) {
+  const firstAttempt = await createAiCompletionOnce({
+    apiKey,
+    model,
+    instructions,
+    input,
+    maxOutputTokens,
+    prompt
+  });
+
+  if (
+    firstAttempt.status === "incomplete" &&
+    firstAttempt.incomplete_details?.reason === "max_output_tokens" &&
+    !extractOpenAiText(firstAttempt, { allowEmpty: true })
+  ) {
+    console.warn("Retrying OpenAI response with larger output budget", {
+      responseId: firstAttempt.id,
+      previousMaxOutputTokens: maxOutputTokens
+    });
+
+    const retryMaxOutputTokens = Math.min(maxOutputTokens * 2, 12000);
+    const secondAttempt = await createAiCompletionOnce({
+      apiKey,
+      model,
+      instructions,
+      input,
+      maxOutputTokens: retryMaxOutputTokens,
+      prompt
+    });
+
+    assertCompletedResponse(secondAttempt);
+
+    return extractOpenAiText(secondAttempt);
+  }
+
+  assertCompletedResponse(firstAttempt);
+
+  return extractOpenAiText(firstAttempt);
+}
+
+async function createAiCompletionOnce({
+  apiKey,
+  model,
+  instructions,
+  input,
+  maxOutputTokens = 4000,
+  prompt
+}: CreateAiCompletionInput) {
   const controller = new AbortController();
   const timeoutId = windowlessSetTimeout(() => controller.abort(), 240000);
 
@@ -71,9 +118,7 @@ export async function createAiCompletion({
       );
     }
 
-    assertCompletedResponse(body);
-
-    return extractOpenAiText(body);
+    return body;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error(

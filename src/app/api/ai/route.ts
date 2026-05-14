@@ -122,12 +122,12 @@ function buildEconTutorPromptVariables(payload: AiRequestPayload) {
 
 function getMaxOutputTokens(feature: AiRequestPayload["feature"]) {
   const budgets: Record<AiRequestPayload["feature"], number> = {
-    econTutor: 5000,
-    newsExplainer: 3500,
-    researchAssistant: 3000,
-    careerCoach: 3500,
-    reportAssistant: 4500,
-    dataProjectCoach: 3200
+    econTutor: 7000,
+    newsExplainer: 5000,
+    researchAssistant: 5000,
+    careerCoach: 6000,
+    reportAssistant: 7000,
+    dataProjectCoach: 8000
   };
 
   return budgets[feature];
