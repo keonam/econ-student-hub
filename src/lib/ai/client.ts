@@ -40,7 +40,7 @@ async function readAiJson(response: Response): Promise<AiResponsePayload | AiErr
     return {
       error: response.ok
         ? "AI 응답 형식을 읽을 수 없습니다."
-        : "AI 서버 응답을 읽을 수 없습니다."
+        : `AI 서버 응답을 읽을 수 없습니다. 서버가 처리 시간을 초과했거나 일시적으로 HTML 오류 페이지를 반환했습니다. (HTTP ${response.status})`
     };
   }
 }

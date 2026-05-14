@@ -115,6 +115,8 @@ export const aiFeatureDefinitions: Record<AiFeature, AiFeatureDefinition> = {
       sharedRules,
       "Focus on economics data analysis projects for undergraduate portfolios.",
       "Recommend feasible projects using public datasets such as ECOS, KOSIS, FRED, World Bank, OECD Data, and IMF Data.",
+      "Keep the answer compact enough for a single web response. Use short bullets, avoid long paragraphs, and do not over-explain.",
+      "For the five project ideas, write one concise bullet per idea with the research question, data, and method in the same bullet.",
       `Use analysis methods such as ${analysisMethodOptions.join(", ")} when appropriate.`,
       "Do not fabricate actual empirical results. If a result is not known, write a placeholder or explain what result would be tested.",
       "Always answer with the exact Markdown headings below, in this exact order:",

@@ -13,6 +13,7 @@ import {
 import { createAiCompletion } from "@/lib/ai/openai";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const econTutorModeLabels: Record<EconTutorMode, string> = {
   easy: "쉬운 설명 중심",
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
         ? await createAiCompletion({
             apiKey,
             model,
+            maxOutputTokens: getMaxOutputTokens(payload.feature),
             prompt: {
               id: econTutorPromptId as string,
               variables: buildEconTutorPromptVariables(payload)
@@ -74,7 +76,8 @@ export async function POST(request: Request) {
             apiKey,
             model,
             instructions: feature.systemPrompt,
-            input: buildAiPrompt(payload)
+            input: buildAiPrompt(payload),
+            maxOutputTokens: getMaxOutputTokens(payload.feature)
           });
 
     return NextResponse.json<AiResponsePayload>({
@@ -115,6 +118,19 @@ function buildEconTutorPromptVariables(payload: AiRequestPayload) {
     mode,
     category
   };
+}
+
+function getMaxOutputTokens(feature: AiRequestPayload["feature"]) {
+  const budgets: Record<AiRequestPayload["feature"], number> = {
+    econTutor: 5000,
+    newsExplainer: 3500,
+    researchAssistant: 3000,
+    careerCoach: 3500,
+    reportAssistant: 4500,
+    dataProjectCoach: 3200
+  };
+
+  return budgets[feature];
 }
 
 function jsonError(message: string, status: number, details?: string) {
