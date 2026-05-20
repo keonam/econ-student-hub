@@ -67,7 +67,14 @@ export function AiDataProjectCoachSection({
       const result = await requestAiResponse(
         {
           feature: "dataProjectCoach",
-          input: buildDataProjectCoachInput(form)
+          input: buildDataProjectCoachInput(form),
+          promptVariables: {
+            interestArea: form.interestArea,
+            selectedTopic: form.selectedTopic,
+            researchQuestion: form.researchQuestion,
+            dataPlan: form.dataPlan,
+            analysisMethod: form.analysisMethod
+          }
         },
         "데이터 프로젝트 추천 생성에 실패했습니다."
       );

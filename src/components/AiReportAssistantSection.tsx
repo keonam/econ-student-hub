@@ -64,7 +64,16 @@ export function AiReportAssistantSection({
       const result = await requestAiResponse(
         {
           feature: "reportAssistant",
-          input: buildReportAssistantInput(form)
+          input: buildReportAssistantInput(form),
+          promptVariables: {
+            courseName: form.courseName,
+            topic: form.topic,
+            length: form.length,
+            dueDate: form.dueDate,
+            requirements: form.requirements,
+            currentClaim: form.currentClaim,
+            dataOrCases: form.dataOrCases
+          }
         },
         "AI 리포트 계획 생성에 실패했습니다."
       );

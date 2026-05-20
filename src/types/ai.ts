@@ -58,6 +58,7 @@ export type AiRequestPayload = {
   sourceType?: "url" | "text";
   sourceUrl?: string;
   articleTitle?: string;
+  promptVariables?: Record<string, string>;
   context?: AiRequestContext;
 };
 

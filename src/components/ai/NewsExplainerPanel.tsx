@@ -93,7 +93,13 @@ export function NewsExplainerPanel({ onApplyToForm, onSave, seed }: NewsExplaine
           input,
           sourceType: nextSourceType,
           sourceUrl: nextSourceUrl,
-          articleTitle: nextTitle
+          articleTitle: nextTitle,
+          promptVariables: {
+            sourceType: nextSourceType,
+            articleTitle: nextTitle,
+            sourceUrl: nextSourceUrl,
+            articleText: nextArticleText
+          }
         },
         "AI 뉴스 분석에 실패했습니다."
       );

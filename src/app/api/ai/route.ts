@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-5";
-  const econTutorPromptId = process.env.OPENAI_ECON_TUTOR_PROMPT_ID?.trim();
+  const promptId = getPromptId(payload.feature);
 
   if (!apiKey) {
     return jsonError(
@@ -52,9 +52,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (payload.feature === "econTutor" && !econTutorPromptId) {
+  if (isPromptBuilderFeature(payload.feature) && !promptId) {
     return jsonError(
-      "AI Econ Tutor를 사용하려면 서버 환경변수 OPENAI_ECON_TUTOR_PROMPT_ID가 필요합니다. Prompt Builder의 Prompt ID를 EC2 .env.local에 설정한 뒤 앱을 재시작해주세요.",
+      `${getFeatureLabel(payload.feature)}를 사용하려면 서버 환경변수 ${getPromptEnvName(payload.feature)}가 필요합니다. Prompt Builder의 Prompt ID를 EC2 .env.local에 설정한 뒤 앱을 재시작해주세요.`,
       503
     );
   }
@@ -62,14 +62,14 @@ export async function POST(request: Request) {
   try {
     const feature = aiFeatureDefinitions[payload.feature];
     const output =
-      payload.feature === "econTutor"
+      promptId
         ? await createAiCompletion({
             apiKey,
             model,
             maxOutputTokens: getMaxOutputTokens(payload.feature),
             prompt: {
-              id: econTutorPromptId as string,
-              variables: buildEconTutorPromptVariables(payload)
+              id: promptId,
+              variables: buildPromptVariables(payload)
             }
           })
         : await createAiCompletion({
@@ -118,6 +118,51 @@ function buildEconTutorPromptVariables(payload: AiRequestPayload) {
     mode,
     category
   };
+}
+
+function buildPromptVariables(payload: AiRequestPayload) {
+  if (payload.feature === "econTutor") {
+    return buildEconTutorPromptVariables(payload);
+  }
+
+  return payload.promptVariables ?? {
+    input: payload.input
+  };
+}
+
+function getPromptId(feature: AiRequestPayload["feature"]) {
+  const envName = getPromptEnvName(feature);
+
+  return envName ? process.env[envName]?.trim() : undefined;
+}
+
+function getPromptEnvName(feature: AiRequestPayload["feature"]) {
+  const envNames: Partial<Record<AiRequestPayload["feature"], string>> = {
+    econTutor: "OPENAI_ECON_TUTOR_PROMPT_ID",
+    reportAssistant: "OPENAI_REPORT_ASSISTANT_PROMPT_ID",
+    newsExplainer: "OPENAI_NEWS_EXPLAINER_PROMPT_ID",
+    dataProjectCoach: "OPENAI_DATA_PROJECT_COACH_PROMPT_ID",
+    careerCoach: "OPENAI_CAREER_COACH_PROMPT_ID"
+  };
+
+  return envNames[feature];
+}
+
+function isPromptBuilderFeature(feature: AiRequestPayload["feature"]) {
+  return Boolean(getPromptEnvName(feature));
+}
+
+function getFeatureLabel(feature: AiRequestPayload["feature"]) {
+  const labels: Record<AiRequestPayload["feature"], string> = {
+    econTutor: "AI Econ Tutor",
+    newsExplainer: "AI News Explainer",
+    researchAssistant: "AI Research Assistant",
+    careerCoach: "AI Career Coach",
+    reportAssistant: "AI Report Assistant",
+    dataProjectCoach: "Data Project Coach"
+  };
+
+  return labels[feature];
 }
 
 function getMaxOutputTokens(feature: AiRequestPayload["feature"]) {

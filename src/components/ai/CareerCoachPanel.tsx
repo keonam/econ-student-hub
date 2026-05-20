@@ -123,6 +123,15 @@ export function CareerCoachPanel({
         {
           feature: "careerCoach",
           input: buildCareerCoachInput(form),
+          promptVariables: {
+            targetCareer: form.targetCareer,
+            skills: form.skills,
+            experiences: form.experiences,
+            jobPosting: form.jobPosting,
+            organization: form.organization,
+            role: form.role,
+            deadline: form.deadline
+          },
           context: aiContext
         },
         "AI 커리어 분석에 실패했습니다."

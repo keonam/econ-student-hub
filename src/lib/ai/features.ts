@@ -222,8 +222,22 @@ export function validateAiRequestPayload(value: unknown): AiRequestPayload {
     sourceType: payload.sourceType,
     sourceUrl: payload.sourceUrl,
     articleTitle: payload.articleTitle,
+    promptVariables: sanitizePromptVariables(payload.promptVariables),
     context: payload.context
   };
+}
+
+function sanitizePromptVariables(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      typeof item === "string" ? item.trim() : String(item ?? "")
+    ])
+  );
 }
 
 function getTutorModeLabel(mode: NonNullable<AiRequestPayload["mode"]>) {
